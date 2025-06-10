@@ -1,0 +1,105 @@
+####### Hierarchical latent-trait MPT with TreeBGUS #####
+
+ model{
+
+ for (n in 1: subjs){
+
+### MPT model equations:
+T_E[n,1] <- theta[4,n]*theta[3,n]+theta[4,n]*(1-theta[3,n])*theta[1,n]+(1-theta[4,n])*theta[2,n]*theta[1,n]
+T_E[n,2] <- (1-theta[4,n])*(1-theta[2,n])
+T_E[n,3] <- theta[4,n]*(1-theta[3,n])*(1-theta[1,n])+(1-theta[4,n])*theta[2,n]*(1-theta[1,n])
+
+T_N[n,1] <- (1-theta[4,n])*theta[2,n]*theta[1,n]
+T_N[n,2] <- theta[4,n]+(1-theta[4,n])*(1-theta[2,n])
+T_N[n,3] <- (1-theta[4,n])*theta[2,n]*(1-theta[1,n])
+
+T_U[n,1] <- theta[4,n]*(1-theta[3,n])*theta[1,n]+(1-theta[4,n])*theta[2,n]*theta[1,n]
+T_U[n,2] <- (1-theta[4,n])*(1-theta[2,n])
+T_U[n,3] <- theta[4,n]*theta[3,n]+theta[4,n]*(1-theta[3,n])*(1-theta[1,n])+(1-theta[4,n])*theta[2,n]*(1-theta[1,n])
+
+
+### Multinomial likelihood:
+response.T_E[n,1:3] ~ dmulti(T_E[n,1:3],items.T_E[n])
+response.T_N[n,1:3] ~ dmulti(T_N[n,1:3],items.T_N[n])
+response.T_U[n,1:3] ~ dmulti(T_U[n,1:3],items.T_U[n])
+}
+
+
+### Hierarchical structure: 
+for(i in 1:subjs) {
+theta[1,i] <- phi(mu[1] + xi[1]*delta.part.raw[1,i] + factor_a_Group[covData[i,1]])
+theta[2,i] <- phi(mu[2] + xi[2]*delta.part.raw[2,i] + factor_b_Group[covData[i,1]])
+theta[3,i] <- phi(mu[3] + xi[3]*delta.part.raw[3,i] + factor_d1_Group[covData[i,1]])
+theta[4,i] <- phi(mu[4] + xi[4]*delta.part.raw[4,i] + factor_D1_Group[covData[i,1]])
+}
+
+for(level in 1:1){
+  sfactor_a_Group[level] ~ dnorm(0, tau_factor_a_Group) 
+}
+for(level in 1:2){
+  factor_a_Group[level] <- inprod(sfactor_a_Group, X_factor_a_Group[level,])
+} 
+tau_factor_a_Group ~ dchisq(1)
+SD_factor_a_Group <- sqrt(inverse(tau_factor_a_Group))
+for(level in 1:1){
+  sfactor_b_Group[level] ~ dnorm(0, tau_factor_b_Group) 
+}
+for(level in 1:2){
+  factor_b_Group[level] <- inprod(sfactor_b_Group, X_factor_b_Group[level,])
+} 
+tau_factor_b_Group ~ dchisq(1)
+SD_factor_b_Group <- sqrt(inverse(tau_factor_b_Group))
+for(level in 1:1){
+  sfactor_d1_Group[level] ~ dnorm(0, tau_factor_d1_Group) 
+}
+for(level in 1:2){
+  factor_d1_Group[level] <- inprod(sfactor_d1_Group, X_factor_d1_Group[level,])
+} 
+tau_factor_d1_Group ~ dchisq(1)
+SD_factor_d1_Group <- sqrt(inverse(tau_factor_d1_Group))
+for(level in 1:1){
+  sfactor_D1_Group[level] ~ dnorm(0, tau_factor_D1_Group) 
+}
+for(level in 1:2){
+  factor_D1_Group[level] <- inprod(sfactor_D1_Group, X_factor_D1_Group[level,])
+} 
+tau_factor_D1_Group ~ dchisq(1)
+SD_factor_D1_Group <- sqrt(inverse(tau_factor_D1_Group))
+
+# hyperpriors
+for(i in 1:subjs) {
+  delta.part.raw[1:S,i] ~ dmnorm(mu.delta.raw[1:S],T.prec.part[1:S,1:S])
+}
+
+
+T.prec.part[1:S,1:S] ~ dwish(V, df)
+Sigma.raw[1:S,1:S] <- inverse(T.prec.part[,])
+for(s in 1:S){
+  mu.delta.raw[s] <- 0
+  mean[s] <- phi(mu[s])
+  for(q in 1:S){
+    Sigma[s,q] <- Sigma.raw[q,s]*xi[s]*xi[q]
+  }
+}
+
+for(s in 1:S){
+  for(q in 1:S){
+    # Off-diagonal elements of S (correlations not affected by xi)
+    rho[s,q] <- Sigma[s,q]/sqrt(Sigma[s,s]*Sigma[q,q])
+  }
+  # Diagonal elements of S (rescale sigma)
+  sigma[s] <- sqrt(Sigma[s,s])
+}
+
+mu[1] ~ dnorm(0,1)
+mu[2] ~ dnorm(0,1)
+mu[3] ~ dnorm(0,1)
+mu[4] ~ dnorm(0,1)
+xi[1] ~ dunif(0,10)
+xi[2] ~ dunif(0,10)
+xi[3] ~ dunif(0,10)
+xi[4] ~ dunif(0,10)
+
+
+### No tranformed parameters specified # 
+}

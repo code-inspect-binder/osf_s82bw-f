@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo "Installing flowR addin..."
+
+Rscript -e "install.packages('remotes', repos = 'https://cloud.r-project.org')"
+
+Rscript -e "if (Sys.getenv('GITHUB_ACCESS_TOKEN') != '') Sys.setenv(GITHUB_PAT = Sys.getenv('GITHUB_ACCESS_TOKEN')); remotes::install_github('flowr-analysis/rstudio-addin-flowr@v0.1.2')"
